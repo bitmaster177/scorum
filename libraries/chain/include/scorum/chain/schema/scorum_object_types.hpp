@@ -34,8 +34,6 @@ using scorum::protocol::chain_id_type;
 using scorum::protocol::share_type;
 using scorum::protocol::transaction_id_type;
 
-struct by_id;
-
 enum object_type
 {
     account_authority_object_type,

@@ -12,6 +12,8 @@ template <typename T> struct get_index_type
 };
 
 template <uint16_t Id> struct get_object_type;
+
+struct by_id;
 }
 
 /**

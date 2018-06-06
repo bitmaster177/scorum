@@ -6,14 +6,14 @@
 #include <scorum/snapshot/data_struct_hash.hpp>
 #include <scorum/snapshot/get_types_by_id.hpp>
 
-//#include <fc/io/json.hpp>
+#include <fc/io/json.hpp>
 
 namespace scorum {
 namespace snapshot {
 
 using db_state = chainbase::db_state;
 
-template <class Section> class load_index_visitor
+template <class IterationTag, class Section> class load_index_visitor
 {
 public:
     using result_type = void;
@@ -26,6 +26,8 @@ public:
 
     template <class T> void operator()(const T&) const
     {
+        static const int debug_id = 9;
+
         using object_type = typename T::type;
 
         std::cerr << "loading " << object_type::type_id << ": " << boost::core::demangle(typeid(object_type).name())
@@ -33,8 +35,14 @@ public:
 
         size_t sz = 0;
         fc::raw::unpack(_fstream, sz);
+
         if (sz > 0)
         {
+            if (debug_id == object_type::type_id)
+            {
+                std::cerr << object_type::type_id << std::endl;
+            }
+
             fc::ripemd160 check, etalon;
 
             fc::raw::unpack(_fstream, check);
@@ -54,34 +62,96 @@ public:
             FC_ASSERT(check == etalon);
 
             using object_id_type = typename object_type::id_type;
+            using objects_copy_type = fc::shared_map<object_id_type, object_type>;
+            using object_ref_type = std::reference_wrapper<const object_type>;
+            using objects_type = std::vector<object_ref_type>;
 
-            for (size_t ci = 0; ci < sz; ++ci)
+            const auto& index = _state.template get_index<typename chainbase::get_index_type<object_type>::type>()
+                                    .indices()
+                                    .template get<IterationTag>();
+
+            objects_type objs_to_remove;
+            objects_copy_type objs_to_modify(index.get_allocator());
+
+            objs_to_remove.reserve(index.size());
+
+            for (auto itr = index.begin(); itr != index.end(); ++itr)
             {
-                object_id_type obj_id;
-                fc::raw::unpack(_fstream, obj_id);
-                const object_type* pobj = _state.template find<object_type>(obj_id);
-                if (pobj == nullptr)
+                const object_type& obj = (*itr);
+
+                if (sz > 0)
                 {
-                    _state.template create<object_type>([&](object_type& obj) {
-                        fc::raw::unpack(_fstream, obj);
-                        //                        fc::variant vo;
-                        //                        fc::to_variant(obj, vo);
-                        //                        std::cerr << "created " <<
-                        //                        boost::core::demangle(typeid(object_type).name()) << ": "
-                        //                                  << fc::json::to_pretty_string(vo) << std::endl;
+                    objs_to_modify.emplace(std::make_pair(obj.id, obj));
+                    object_type& obj = objs_to_modify.at(obj.id);
+                    fc::raw::unpack(_fstream, obj);
+                    --sz;
+                }
+
+                if (!sz || objs_to_modify.find(obj.id) == objs_to_modify.end())
+                {
+                    objs_to_remove.emplace_back(std::cref(obj));
+                }
+            }
+
+            for (const object_type& obj : objs_to_remove)
+            {
+                if (debug_id == object_type::type_id)
+                {
+                    fc::variant vo;
+                    fc::to_variant(obj, vo);
+                    std::cerr << "removed " << boost::core::demangle(typeid(object_type).name()) << ":"
+                              << fc::json::to_pretty_string(vo) << std::endl;
+                }
+                _state.template remove(obj);
+            }
+
+            objs_to_remove.clear();
+
+            for (auto& item : objs_to_modify)
+            {
+                const object_type* pobj = _state.template find<object_type>(item.first);
+                if (pobj != nullptr)
+                {
+                    _state.template modify<object_type>(*pobj, [&](object_type& obj) {
+                        obj = std::move(item.second);
+                        if (debug_id == object_type::type_id)
+                        {
+                            fc::variant vo;
+                            fc::to_variant(obj, vo);
+                            std::cerr << "updated " << boost::core::demangle(typeid(object_type).name()) << ":"
+                                      << fc::json::to_pretty_string(vo) << std::endl;
+                        }
                     });
                 }
                 else
                 {
-                    _state.template modify<object_type>(*pobj, [&](object_type& obj) {
-                        fc::raw::unpack(_fstream, obj);
-                        //                        fc::variant vo;
-                        //                        fc::to_variant(obj, vo);
-                        //                        std::cerr << "updated " <<
-                        //                        boost::core::demangle(typeid(object_type).name()) << ":"
-                        //                                  << fc::json::to_pretty_string(vo) << std::endl;
+                    _state.template create<object_type>([&](object_type& obj) {
+                        obj = std::move(item.second);
+                        if (debug_id == object_type::type_id)
+                        {
+                            fc::variant vo;
+                            fc::to_variant(obj, vo);
+                            std::cerr << "created " << boost::core::demangle(typeid(object_type).name()) << ": "
+                                      << fc::json::to_pretty_string(vo) << std::endl;
+                        }
                     });
                 }
+            }
+
+            objs_to_modify.clear();
+
+            while (sz--)
+            {
+                _state.template create<object_type>([&](object_type& obj) {
+                    fc::raw::unpack(_fstream, obj);
+                    if (debug_id == object_type::type_id)
+                    {
+                        fc::variant vo;
+                        fc::to_variant(obj, vo);
+                        std::cerr << "created " << boost::core::demangle(typeid(object_type).name()) << ": "
+                                  << fc::json::to_pretty_string(vo) << std::endl;
+                    }
+                });
             }
         }
     }
@@ -112,7 +182,7 @@ void load_index_section(std::ifstream& fstream,
         // checking because static variant interpret uninitialized state like first type
         if (initialized)
         {
-            v.visit(load_index_visitor<Section>(fstream, state));
+            v.visit(load_index_visitor<by_id, Section>(fstream, state));
             loaded_idxs.insert(index_id);
         }
     });

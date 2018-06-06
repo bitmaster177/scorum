@@ -382,7 +382,7 @@ using scorum::snapshot::witness_section;
 void witness_plugin_impl::save_snapshot(std::ofstream& fs)
 {
     database& db = _self.database();
-    scorum::snapshot::save_index_section<by_id>(fs, static_cast<db_state&>(db), witness_section());
+    scorum::snapshot::save_index_section(fs, static_cast<db_state&>(db), witness_section());
 }
 
 void witness_plugin_impl::load_snapshot(std::ifstream& fs, scorum::snapshot::index_ids_type& loaded_idxs)

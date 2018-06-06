@@ -228,7 +228,7 @@ using scorum::snapshot::account_by_key_section;
 void account_by_key_plugin_impl::save_snapshot(std::ofstream& fs)
 {
     chain::database& db = database();
-    scorum::snapshot::save_index_section<by_id>(fs, static_cast<db_state&>(db), account_by_key_section());
+    scorum::snapshot::save_index_section(fs, static_cast<db_state&>(db), account_by_key_section());
 }
 
 void account_by_key_plugin_impl::load_snapshot(std::ifstream& fs, scorum::snapshot::index_ids_type& loaded_idxs)
