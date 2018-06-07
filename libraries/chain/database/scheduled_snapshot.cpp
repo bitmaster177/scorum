@@ -148,8 +148,8 @@ void save_scheduled_snapshot::on_apply(block_task_context& ctx)
 
     if (!snapshot_service.is_snapshot_scheduled())
     {
-        check_snapshot_task(ctx);
-        return;
+        if (!check_snapshot_task(ctx))
+            return;
     }
 
     auto number = snapshot_service.get_snapshot_scheduled_number();
@@ -170,7 +170,7 @@ void save_scheduled_snapshot::on_apply(block_task_context& ctx)
     fc::remove_all(snapshot_path);
 }
 
-void save_scheduled_snapshot::check_snapshot_task(block_task_context& ctx)
+bool save_scheduled_snapshot::check_snapshot_task(block_task_context& ctx)
 {
     snapshot_service_i& snapshot_service = ctx.services().snapshot_service();
 
@@ -179,6 +179,8 @@ void save_scheduled_snapshot::check_snapshot_task(block_task_context& ctx)
     {
         snapshot_service.schedule_snapshot_task(ctx.block_num());
     }
+
+    return snapshot_service.is_snapshot_scheduled();
 }
 
 load_scheduled_snapshot::load_scheduled_snapshot(database& db)

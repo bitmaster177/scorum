@@ -35,7 +35,7 @@ struct save_scheduled_snapshot : public block_task
     virtual void on_apply(block_task_context&);
 
 private:
-    void check_snapshot_task(block_task_context&);
+    bool check_snapshot_task(block_task_context&);
 
     std::unique_ptr<scheduled_snapshot_impl> _impl;
 };
