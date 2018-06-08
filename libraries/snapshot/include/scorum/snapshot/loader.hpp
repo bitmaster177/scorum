@@ -6,7 +6,9 @@
 #include <scorum/snapshot/data_struct_hash.hpp>
 #include <scorum/snapshot/get_types_by_id.hpp>
 
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
 #include <fc/io/json.hpp>
+#endif
 
 namespace scorum {
 namespace snapshot {
@@ -26,15 +28,27 @@ public:
 
     template <class T> void operator()(const T&) const
     {
-        static const int debug_id = 9;
-
         using object_type = typename T::type;
 
-        std::cerr << "loading " << object_type::type_id << ": " << boost::core::demangle(typeid(object_type).name())
-                  << std::endl;
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
+        std::string ctx("load");
+        auto object_name = boost::core::demangle(typeid(object_type).name());
+        int debug_id = -1;
+        if (object_name.rfind(BOOST_PP_STRINGIZE(DEBUG_SNAPSHOTTED_OBJECT)) != std::string::npos)
+        {
+            debug_id = (int)object_type::type_id;
+        }
+        snapshot_log(ctx, "loading ${name}:${id}", ("name", object_name)("id", object_type::type_id));
+#endif // DEBUG_SNAPSHOTTED_OBJECT
 
         size_t sz = 0;
         fc::raw::unpack(_fstream, sz);
+
+        const auto& index = _state.template get_index<typename chainbase::get_index_type<object_type>::type>()
+                                .indices()
+                                .template get<IterationTag>();
+
+        object_type tmp([](object_type&) {}, index.get_allocator());
 
         if (sz > 0)
         {
@@ -42,19 +56,7 @@ public:
 
             fc::raw::unpack(_fstream, check);
 
-            const object_type* petalon_obj = _state.template find<object_type>();
-            if (petalon_obj == nullptr)
-            {
-                const object_type& fake_obj = _state.template create<object_type>(
-                    [&](object_type& obj) { etalon = get_data_struct_hash(obj); });
-                _state.template remove(fake_obj);
-            }
-            else
-            {
-                etalon = get_data_struct_hash(*petalon_obj);
-            }
-
-            FC_ASSERT(check == etalon);
+            FC_ASSERT(check == get_data_struct_hash(tmp));
         }
 
         using object_id_type = typename object_type::id_type;
@@ -62,16 +64,15 @@ public:
         using object_ref_type = std::reference_wrapper<const object_type>;
         using objects_type = std::vector<object_ref_type>;
 
-        const auto& index = _state.template get_index<typename chainbase::get_index_type<object_type>::type>()
-                                .indices()
-                                .template get<IterationTag>();
-
         objects_copy_type objs_to_modify(index.get_allocator());
 
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
         if (debug_id == object_type::type_id)
         {
-            std::cerr << object_type::type_id << ": saved sz = " << sz << ", index sz = " << index.size() << std::endl;
+            snapshot_log(ctx, "index size=${sz}", ("sz", index.size()));
+            snapshot_log(ctx, "debugging ${name}:${id}", ("name", object_name)("id", object_type::type_id));
         }
+#endif // DEBUG_SNAPSHOTTED_OBJECT
 
         if (index.size() > 0)
         {
@@ -85,16 +86,9 @@ public:
 
                 if (sz > 0)
                 {
-                    bool new_item = objs_to_modify.emplace(std::make_pair(id, obj)).second;
-                    // TODO: new_item overwrited if not new!!!
-                    object_type& obj = objs_to_modify.at(id);
-                    fc::raw::unpack(_fstream, obj);
+                    fc::raw::unpack(_fstream, tmp);
                     auto loaded_id = obj.id;
-                    objs_to_modify.emplace(std::make_pair(loaded_id, obj));
-                    if (new_item && loaded_id != id)
-                    {
-                        objs_to_modify.erase(id);
-                    }
+                    objs_to_modify.emplace(std::make_pair(loaded_id, tmp));
 
                     --sz;
                 }
@@ -107,13 +101,15 @@ public:
 
             for (const object_type& obj : objs_to_remove)
             {
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
                 if (debug_id == object_type::type_id)
                 {
                     fc::variant vo;
                     fc::to_variant(obj, vo);
-                    std::cerr << "removed " << boost::core::demangle(typeid(object_type).name()) << ":"
-                              << fc::json::to_pretty_string(vo) << std::endl;
+                    snapshot_log(ctx, "removed ${name}: ${obj}",
+                                 ("name", object_name)("obj", fc::json::to_pretty_string(vo)));
                 }
+#endif // DEBUG_SNAPSHOTTED_OBJECT
                 _state.template remove(obj);
             }
         }
@@ -125,26 +121,30 @@ public:
             {
                 _state.template modify<object_type>(*pobj, [&](object_type& obj) {
                     obj = std::move(item.second);
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
                     if (debug_id == object_type::type_id)
                     {
                         fc::variant vo;
                         fc::to_variant(obj, vo);
-                        std::cerr << "updated " << boost::core::demangle(typeid(object_type).name()) << ":"
-                                  << fc::json::to_pretty_string(vo) << std::endl;
+                        snapshot_log(ctx, "updated ${name}: ${obj}",
+                                     ("name", object_name)("obj", fc::json::to_pretty_string(vo)));
                     }
+#endif // DEBUG_SNAPSHOTTED_OBJECT
                 });
             }
             else
             {
                 _state.template create<object_type>([&](object_type& obj) {
                     obj = std::move(item.second);
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
                     if (debug_id == object_type::type_id)
                     {
                         fc::variant vo;
                         fc::to_variant(obj, vo);
-                        std::cerr << "created " << boost::core::demangle(typeid(object_type).name()) << ": "
-                                  << fc::json::to_pretty_string(vo) << std::endl;
+                        snapshot_log(ctx, "created ${name}: ${obj}",
+                                     ("name", object_name)("obj", fc::json::to_pretty_string(vo)));
                     }
+#endif // DEBUG_SNAPSHOTTED_OBJECT
                 });
             }
         }
@@ -155,13 +155,15 @@ public:
         {
             _state.template create<object_type>([&](object_type& obj) {
                 fc::raw::unpack(_fstream, obj);
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
                 if (debug_id == object_type::type_id)
                 {
                     fc::variant vo;
                     fc::to_variant(obj, vo);
-                    std::cerr << "created " << boost::core::demangle(typeid(object_type).name()) << ": "
-                              << fc::json::to_pretty_string(vo) << std::endl;
+                    snapshot_log(ctx, "created ${name}: ${obj}",
+                                 ("name", object_name)("obj", fc::json::to_pretty_string(vo)));
                 }
+#endif // DEBUG_SNAPSHOTTED_OBJECT
             });
         }
     }

@@ -18,6 +18,10 @@ using index_ids_type = fc::flat_set<uint16_t>;
 }
 }
 
+#define DEBUG_SNAPSHOTTED_OBJECT account_registration_bonus_object
+
+#define snapshot_log(CTX, FORMAT, ...) fc_ctx_dlog(fc::logger::get("snapshot"), CTX, FORMAT, __VA_ARGS__)
+
 #define SCORUM_OBJECT_TYPE_EXTRACTION_MAKE_TYPE(elem) get_object_type<BOOST_PP_CAT(elem, _object_type)>
 
 #define SCORUM_OBJECT_TYPE_EXTRACTION_MAKE_TYPE_LIST(_1, _2, n, elem)                                                  \
