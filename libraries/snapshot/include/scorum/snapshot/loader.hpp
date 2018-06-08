@@ -10,6 +10,8 @@
 #include <fc/io/json.hpp>
 #endif
 
+#define DEBUG_SNAPSHOT_LOAD_CONTEXT std::string("load")
+
 namespace scorum {
 namespace snapshot {
 
@@ -31,14 +33,14 @@ public:
         using object_type = typename T::type;
 
 #ifdef DEBUG_SNAPSHOTTED_OBJECT
-        std::string ctx("load");
+        std::string ctx(DEBUG_SNAPSHOT_LOAD_CONTEXT);
         auto object_name = boost::core::demangle(typeid(object_type).name());
         int debug_id = -1;
         if (object_name.rfind(BOOST_PP_STRINGIZE(DEBUG_SNAPSHOTTED_OBJECT)) != std::string::npos)
         {
             debug_id = (int)object_type::type_id;
         }
-        snapshot_log(ctx, "loading ${name}:${id}", ("name", object_name)("id", object_type::type_id));
+        snapshot_log(ctx, "loading ${name}:${id}", ("name", object_name)("id", (int)object_type::type_id));
 #endif // DEBUG_SNAPSHOTTED_OBJECT
 
         size_t sz = 0;
@@ -70,7 +72,7 @@ public:
         if (debug_id == object_type::type_id)
         {
             snapshot_log(ctx, "index size=${sz}", ("sz", index.size()));
-            snapshot_log(ctx, "debugging ${name}:${id}", ("name", object_name)("id", object_type::type_id));
+            snapshot_log(ctx, "debugging ${name}:${id}", ("name", object_name)("id", (int)object_type::type_id));
         }
 #endif // DEBUG_SNAPSHOTTED_OBJECT
 
@@ -87,7 +89,7 @@ public:
                 if (sz > 0)
                 {
                     fc::raw::unpack(_fstream, tmp);
-                    auto loaded_id = obj.id;
+                    auto loaded_id = tmp.id;
                     objs_to_modify.emplace(std::make_pair(loaded_id, tmp));
 
                     --sz;
@@ -179,6 +181,10 @@ void load_index_section(std::ifstream& fstream,
                         scorum::snapshot::index_ids_type& loaded_idxs,
                         const Section& section)
 {
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
+    snapshot_log(DEBUG_SNAPSHOT_LOAD_CONTEXT, "loading index section=${name}", ("name", section.name));
+#endif // DEBUG_SNAPSHOTTED_OBJECT
+
     fc::ripemd160 check;
 
     fc::raw::unpack(fstream, check);

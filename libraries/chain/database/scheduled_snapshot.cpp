@@ -102,7 +102,10 @@ public:
 
         vops.notify_load_snapshot(snapshot_stream, loaded_idxs);
 
-        std::cerr << _state.get_indexes_size() << " ? " << loaded_idxs.size() << std::endl;
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
+        snapshot_log(DEBUG_SNAPSHOT_LOAD_CONTEXT, "state index size=${sz}, loaded=${lsz}",
+                     ("sz", _state.get_indexes_size())("lsz", loaded_idxs.size()));
+#endif // DEBUG_SNAPSHOTTED_OBJECT
 
         FC_ASSERT(_state.get_indexes_size() == loaded_idxs.size(), "Not all indexes are loaded");
 

@@ -10,6 +10,8 @@
 #include <fc/io/json.hpp>
 #endif
 
+#define DEBUG_SNAPSHOT_SAVE_CONTEXT std::string("save")
+
 namespace scorum {
 namespace snapshot {
 
@@ -31,14 +33,14 @@ public:
         using object_type = typename T::type;
 
 #ifdef DEBUG_SNAPSHOTTED_OBJECT
-        std::string ctx("save");
+        std::string ctx(DEBUG_SNAPSHOT_SAVE_CONTEXT);
         auto object_name = boost::core::demangle(typeid(object_type).name());
         int debug_id = -1;
         if (object_name.rfind(BOOST_PP_STRINGIZE(DEBUG_SNAPSHOTTED_OBJECT)) != std::string::npos)
         {
             debug_id = (int)object_type::type_id;
         }
-        snapshot_log(ctx, "saving ${name}:${id}", ("name", object_name)("id", object_type::type_id));
+        snapshot_log(ctx, "saving index of ${name}:${id}", ("name", object_name)("id", (int)object_type::type_id));
 #endif // DEBUG_SNAPSHOTTED_OBJECT
 
         const auto& index = _state.template get_index<typename chainbase::get_index_type<object_type>::type>()
@@ -50,7 +52,7 @@ public:
         if (debug_id == object_type::type_id)
         {
             snapshot_log(ctx, "index size=${sz}", ("sz", sz));
-            snapshot_log(ctx, "debugging ${name}:${id}", ("name", object_name)("id", object_type::type_id));
+            snapshot_log(ctx, "debugging ${name}:${id}", ("name", object_name)("id", (int)object_type::type_id));
         }
 #endif // DEBUG_SNAPSHOTTED_OBJECT
 
@@ -85,6 +87,10 @@ private:
 template <class Section>
 void save_index_section(std::ofstream& fstream, chainbase::db_state& state, const Section& section)
 {
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
+    snapshot_log(DEBUG_SNAPSHOT_SAVE_CONTEXT, "saving index section=${name}", ("name", section.name));
+#endif // DEBUG_SNAPSHOTTED_OBJECT
+
     fc::ripemd160::encoder check_enc;
     fc::raw::pack(check_enc, section.name);
     fc::raw::pack(fstream, check_enc.result());
