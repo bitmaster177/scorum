@@ -31,6 +31,15 @@ public:
         return _self.database();
     }
 
+    void check_dbindex_startup()
+    {
+        if (!_startup)
+        {
+            _startup = true;
+            update_genesis_accounts();
+        }
+    }
+    void update_genesis_accounts();
     void pre_operation(const operation_notification& op_obj);
     void post_operation(const operation_notification& op_obj);
     void clear_cache();
@@ -42,6 +51,7 @@ public:
 
     flat_set<public_key_type> cached_keys;
     account_by_key_plugin& _self;
+    bool _startup = false;
 };
 
 struct pre_operation_visitor
@@ -237,8 +247,30 @@ void account_by_key_plugin_impl::load_snapshot(std::ifstream& fs, scorum::snapsh
     scorum::snapshot::load_index_section(fs, static_cast<db_state&>(db), loaded_idxs, account_by_key_section());
 }
 
+void account_by_key_plugin_impl::update_genesis_accounts()
+{
+    chain::database& db = database();
+
+    auto it_pair = db.get_index<account_index>().indices().get<by_created_by_genesis>().equal_range(true);
+    auto it = it_pair.first;
+    const auto it_end = it_pair.second;
+    while (it != it_end)
+    {
+        auto it_2_pair = db.get_index<account_authority_index>().indices().get<by_account>().equal_range(it->name);
+        auto it_2 = it_2_pair.first;
+        const auto it_2_end = it_2_pair.second;
+        while (it_2 != it_2_end)
+        {
+            update_key_lookup(*it_2);
+            ++it_2;
+        }
+        ++it;
+    }
+}
+
 void account_by_key_plugin_impl::pre_operation(const operation_notification& note)
 {
+    check_dbindex_startup();
     note.op.visit(pre_operation_visitor(_self));
 }
 
@@ -287,24 +319,6 @@ void account_by_key_plugin::plugin_initialize(const boost::program_options::vari
 void account_by_key_plugin::plugin_startup()
 {
     app().register_api_factory<account_by_key_api>("account_by_key_api");
-
-    chain::database& db = database();
-
-    auto it_pair = db.get_index<account_index>().indices().get<by_created_by_genesis>().equal_range(true);
-    auto it = it_pair.first;
-    const auto it_end = it_pair.second;
-    while (it != it_end)
-    {
-        auto it_2_pair = db.get_index<account_authority_index>().indices().get<by_account>().equal_range(it->name);
-        auto it_2 = it_2_pair.first;
-        const auto it_2_end = it_2_pair.second;
-        while (it_2 != it_2_end)
-        {
-            my->update_key_lookup(*it_2);
-            ++it_2;
-        }
-        ++it;
-    }
 }
 }
 } // scorum::account_by_key
