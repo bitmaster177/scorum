@@ -234,7 +234,11 @@ void database::reindex(const fc::path& data_dir,
         SCORUM_ASSERT(_block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain.");
 
         auto last_block_num = _block_log.head()->block_num();
+#if 0
         uint log_interval_sz = std::max(last_block_num / 100u, 1000u);
+#else
+        uint log_interval_sz = 100u;
+#endif
         using scorum::protocol::digest_type;
         digest_type start_apply_block_digest;
         if (snapshot_file != fc::path())
@@ -258,8 +262,9 @@ void database::reindex(const fc::path& data_dir,
                 if (cur_block_num % log_interval_sz == 0 || cur_block_num == last_block_num)
                 {
                     double percent = (cur_block_num * double(100)) / last_block_num;
-                    ilog("${p}% applied. ${m}M free.",
-                         ("p", (boost::format("%5.2f") % percent).str())("m", get_free_memory() / (1024 * 1024)));
+                    ilog("Current block number ${n}. ${p}% applied. ${m}M free.",
+                         ("n", cur_block_num)("p", (boost::format("%5.2f") % percent).str())(
+                             "m", get_free_memory() / (1024 * 1024)));
                 }
                 if (start_apply_block_digest != digest_type() && block.digest() == start_apply_block_digest)
                 {
