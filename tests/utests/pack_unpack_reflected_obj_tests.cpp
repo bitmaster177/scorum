@@ -19,6 +19,8 @@
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/container/flat.hpp>
 
+#include <graphene/utilities/tempdir.hpp>
+
 namespace pack_unpack_reflected_obj_tests {
 
 struct test_object_type
@@ -116,13 +118,14 @@ BOOST_AUTO_TEST_CASE(vector_binary_save_and_load)
     v_obj_in.push_back({ "ObjectObject ", 2, "T2" });
     v_obj_in.push_back({ "ObjectObjectObject ", 3, "T3" });
 
-    static const char* snapshot_file_path = "/tmp/test_snapshot.bin";
+    static fc::path snapshot_file_path
+        = fc::temp_directory(graphene::utilities::temp_directory_path()).path() / "test.bin";
 
     fc::remove_all(snapshot_file_path);
 
     {
         std::ofstream snapshot_stream;
-        snapshot_stream.open(snapshot_file_path, std::ios::binary);
+        snapshot_stream.open(snapshot_file_path.generic_string(), std::ios::binary);
 
         fc::ripemd160::encoder check_enc;
         fc::raw::pack(check_enc, __FUNCTION__);
@@ -147,7 +150,7 @@ BOOST_AUTO_TEST_CASE(vector_binary_save_and_load)
 
     {
         std::ifstream snapshot_stream;
-        snapshot_stream.open(snapshot_file_path, std::ios::binary);
+        snapshot_stream.open(snapshot_file_path.generic_string(), std::ios::binary);
 
         {
             fc::ripemd160 check;
@@ -181,49 +184,6 @@ BOOST_AUTO_TEST_CASE(vector_binary_save_and_load)
     }
 }
 
-BOOST_AUTO_TEST_CASE(shared_buffer_save_and_load)
-{
-    using shared_buffer = fc::bip::vector<char>;
-    shared_buffer v_buf_in;
-
-    v_buf_in.push_back(0);
-    v_buf_in.push_back(0);
-    v_buf_in.push_back('a');
-    v_buf_in.push_back('b');
-    v_buf_in.push_back(0);
-
-    static const char* snapshot_file_path = "/tmp/test_snapshot.bin";
-
-    fc::remove_all(snapshot_file_path);
-
-    {
-        std::ofstream snapshot_stream;
-        snapshot_stream.open(snapshot_file_path, std::ios::binary);
-
-        fc::raw::pack(snapshot_stream, v_buf_in);
-
-        snapshot_stream.close();
-    }
-
-    shared_buffer v_buf_out;
-
-    v_buf_out.reserve(v_buf_in.size());
-
-    {
-        std::ifstream snapshot_stream;
-        snapshot_stream.open(snapshot_file_path, std::ios::binary);
-
-        fc::raw::unpack(snapshot_stream, v_buf_out);
-
-        snapshot_stream.close();
-    }
-
-    BOOST_REQUIRE_EQUAL(v_buf_in.size(), v_buf_out.size());
-    for (size_t ci = 0; ci < v_buf_out.size(); ++ci)
-    {
-        BOOST_CHECK_EQUAL(v_buf_in[ci], v_buf_out[ci]);
-    }
-}
 BOOST_AUTO_TEST_SUITE_END()
 }
 

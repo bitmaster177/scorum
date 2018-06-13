@@ -26,8 +26,7 @@ using namespace scorum::chain;
 
 // clang-format off
 //
-// Required exact object type declarations (in schema folders)!
-// For missed types we receive error: invalid application of ‘sizeof’ to incomplete type ‘scorum::get_object_type<?>’’
+// Required exact object type declarations (in schema folders)
 //
 SCORUM_OBJECT_TYPES_FOR_SNAPSHOT_SECTION(base_section, object_type,
                               (account_authority)
