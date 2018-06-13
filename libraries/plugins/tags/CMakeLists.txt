@@ -3,7 +3,8 @@ set (TAGS_HPP "include/scorum/tags/tags_plugin.hpp"
               "include/scorum/tags/tags_api_impl.hpp"
               "include/scorum/tags/tags_api_objects.hpp"
               "include/scorum/tags/tags_objects.hpp"
-              "include/scorum/tags/tags_service.hpp")
+              "include/scorum/tags/tags_service.hpp"
+              "include/scorum/tags/snapshot_types.hpp")
 
 add_library(scorum_tags
             tags_plugin.cpp
@@ -18,7 +19,8 @@ target_link_libraries(scorum_tags
                       scorum_app)
 
 target_include_directories(scorum_tags
-                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
+                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../snapshot/include")
 
 add_custom_target(scorum_tags_manifest SOURCES plugin.json)
 

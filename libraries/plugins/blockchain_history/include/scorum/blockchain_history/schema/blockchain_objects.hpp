@@ -24,13 +24,13 @@ using namespace scorum::chain;
 
 enum blockchain_history_object_type
 {
-    operations_history = (BLOCKCHAIN_HISTORY_SPACE_ID << 8),
-    account_all_operations_history,
-    account_scr_to_scr_transfers_history,
-    account_scr_to_sp_transfers_history,
-    filtered_not_virt_operations_history,
-    filtered_virt_operations_history,
-    filtered_market_operations_history,
+    operations_history_object_type = (BLOCKCHAIN_HISTORY_SPACE_ID << 8),
+    account_all_operations_history_object_type,
+    account_scr_to_scr_transfers_history_object_type,
+    account_scr_to_sp_transfers_history_object_type,
+    filtered_not_virt_operations_history_object_type,
+    filtered_virt_operations_history_object_type,
+    filtered_market_operations_history_object_type,
 };
 }
 }

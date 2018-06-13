@@ -16,6 +16,9 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <scorum/blockchain_history/snapshot_types.hpp>
+#include <scorum/snapshot/plugin_connector.hpp>
+
 #define SCORUM_NAMESPACE_PREFIX "scorum::protocol::"
 
 namespace scorum {
@@ -313,6 +316,8 @@ void blockchain_history_plugin::plugin_initialize(const boost::program_options::
         }
 
         _my->initialize();
+
+        SCORUM_SNAPSHOT_PLUGIN(database(), blockchain_history_section)
     }
     FC_LOG_AND_RETHROW()
 

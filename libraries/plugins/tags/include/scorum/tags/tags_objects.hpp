@@ -42,7 +42,7 @@ typedef fc::fixed_string_32 tag_name_type;
 // globally. If each plugin uses the upper 8 bits as a space identifier,
 // with 0 being for chain, then the lower 8 bits are free for each plugin
 // to define as they see fit.
-enum
+enum tags_object_types
 {
     tag_object_type = (TAG_SPACE_ID << 8),
     tag_stats_object_type,

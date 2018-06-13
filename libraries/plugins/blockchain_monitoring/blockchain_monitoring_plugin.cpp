@@ -16,6 +16,9 @@
 
 #include <chrono>
 
+#include <scorum/blockchain_monitoring/snapshot_types.hpp>
+#include <scorum/snapshot/plugin_connector.hpp>
+
 namespace scorum {
 namespace blockchain_monitoring {
 
@@ -378,6 +381,8 @@ void blockchain_monitoring_plugin::plugin_initialize(const boost::program_option
         ilog("chain-stats-history-per-bucket: ${h}", ("h", _my->_maximum_history_per_bucket_size));
 
         _my->initialize();
+
+        //        SCORUM_SNAPSHOT_PLUGIN(database(), blockchain_monitoring_section)
     }
     FC_CAPTURE_AND_RETHROW()
 

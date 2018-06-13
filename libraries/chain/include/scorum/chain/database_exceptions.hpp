@@ -23,7 +23,7 @@
 #define SCORUM_DECLARE_INTERNAL_EXCEPTION(exc_name, seqnum, msg)                                                       \
     FC_DECLARE_DERIVED_EXCEPTION(internal_##exc_name, scorum::chain::internal_exception, 4990000 + seqnum, msg)
 
-#ifdef DEBUG
+#ifdef DEBUG_PLUGINS
 #define SCORUM_TRY_NOTIFY(signal, ...)                                                                                 \
     try                                                                                                                \
     {                                                                                                                  \

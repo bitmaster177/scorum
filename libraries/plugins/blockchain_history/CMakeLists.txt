@@ -14,7 +14,8 @@ target_link_libraries( scorum_blockchain_history
                        scorum_app )
 target_include_directories( scorum_blockchain_history
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../common_api/include")
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../common_api/include"
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../snapshot/include")
 
 add_custom_target( scorum_blockchain_history_manifest SOURCES plugin.json)
 

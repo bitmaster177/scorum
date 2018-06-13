@@ -13,7 +13,8 @@ target_link_libraries( scorum_blockchain_monitoring
                        scorum_app )
 target_include_directories( scorum_blockchain_monitoring
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../common_statistics/include")
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../common_statistics/include"
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../snapshot/include")
 
 add_custom_target( scorum_blockchain_monitoring_manifest SOURCES plugin.json)
 

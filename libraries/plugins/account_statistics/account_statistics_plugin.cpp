@@ -7,6 +7,9 @@
 
 #include <scorum/chain/database/database.hpp>
 
+#include <scorum/account_statistics/snapshot_types.hpp>
+#include <scorum/snapshot/plugin_connector.hpp>
+
 namespace scorum {
 namespace account_statistics {
 
@@ -116,6 +119,8 @@ void account_statistics_plugin::plugin_initialize(const boost::program_options::
     try
     {
         _my->initialize();
+
+        //        SCORUM_SNAPSHOT_PLUGIN(database(), account_statistic_section)
     }
     FC_LOG_AND_RETHROW()
 

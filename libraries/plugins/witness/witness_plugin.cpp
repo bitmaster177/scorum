@@ -42,9 +42,8 @@
 #include <iostream>
 #include <memory>
 
-#include <scorum/snapshot/saver.hpp>
-#include <scorum/snapshot/loader.hpp>
 #include <scorum/witness/snapshot_types.hpp>
+#include <scorum/snapshot/plugin_connector.hpp>
 
 #define DISTANCE_CALC_PRECISION (10000)
 
@@ -74,9 +73,6 @@ public:
     void on_block(const signed_block& b);
 
     void update_account_bandwidth(const account_object& a, uint32_t trx_size, const bandwidth_type type);
-
-    void save_snapshot(std::ofstream& fs);
-    void load_snapshot(std::ifstream& fs, scorum::snapshot::index_ids_type& loaded_idxs);
 
     witness_plugin& _self;
 };
@@ -375,21 +371,6 @@ void witness_plugin_impl::update_account_bandwidth(const account_object& a,
                               "max_virtual_bandwidth", max_virtual_bandwidth)("total_scorumpower", total_vshares));
     }
 }
-
-using scorum::snapshot::db_state;
-using scorum::snapshot::witness_section;
-
-void witness_plugin_impl::save_snapshot(std::ofstream& fs)
-{
-    database& db = _self.database();
-    scorum::snapshot::save_index_section(fs, static_cast<db_state&>(db), witness_section());
-}
-
-void witness_plugin_impl::load_snapshot(std::ifstream& fs, scorum::snapshot::index_ids_type& loaded_idxs)
-{
-    database& db = _self.database();
-    scorum::snapshot::load_index_section(fs, static_cast<db_state&>(db), loaded_idxs, witness_section());
-}
 }
 
 witness_plugin::witness_plugin(application* app)
@@ -469,13 +450,10 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
         db.pre_apply_operation.connect([&](const operation_notification& note) { _my->pre_operation(note); });
         db.applied_block.connect([&](const signed_block& b) { _my->on_block(b); });
 
-        db.save_snapshot.connect([&](std::ofstream& fs) { _my->save_snapshot(fs); });
-        db.load_snapshot.connect([&](std::ifstream& fs, scorum::snapshot::index_ids_type& loaded_idxs) {
-            _my->load_snapshot(fs, loaded_idxs);
-        });
-
         db.add_plugin_index<account_bandwidth_index>();
         db.add_plugin_index<reserve_ratio_index>();
+
+        SCORUM_SNAPSHOT_PLUGIN(db, witness_section)
     }
     FC_LOG_AND_RETHROW()
 

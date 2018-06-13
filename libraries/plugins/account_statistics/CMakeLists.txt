@@ -12,7 +12,8 @@ target_link_libraries( scorum_account_statistics
                        scorum_app )
 target_include_directories( scorum_account_statistics
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../common_statistics/include")
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../common_statistics/include"
+                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../snapshot/include")
 
 add_custom_target( scorum_account_statistics_manifest SOURCES plugin.json)
 
