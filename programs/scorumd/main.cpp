@@ -20,6 +20,14 @@
 
 #include "log_configurator.hpp"
 
+#define SCORUM_SET_SIGNAL_HANDLER(SIG)                                                                                 \
+    fc::set_signal_handler(                                                                                            \
+        [&handle_promise, &return_signal](int signal) {                                                                \
+            return_signal = signal;                                                                                    \
+            handle_promise->set_value(signal);                                                                         \
+        },                                                                                                             \
+        SIG);
+
 using namespace scorum;
 using scorum::protocol::version;
 namespace bpo = boost::program_options;
@@ -31,34 +39,12 @@ void wait_signals(app::application* node)
         fc::promise<int>::ptr handle_promise = new fc::promise<int>("UNIX Signal Handler");
 
         int return_signal = 0;
-        fc::set_signal_handler(
-            [&handle_promise, &return_signal](int signal) {
-                return_signal = signal;
-                handle_promise->set_value(signal);
-            },
-            SIGINT);
-
-        fc::set_signal_handler(
-            [&handle_promise, &return_signal](int signal) {
-                return_signal = signal;
-                handle_promise->set_value(signal);
-            },
-            SIGTERM);
-
-        fc::set_signal_handler(
-            [&handle_promise, &return_signal](int signal) {
-                return_signal = signal;
-                handle_promise->set_value(signal);
-            },
-            SIGUSR1);
+        SCORUM_SET_SIGNAL_HANDLER(SIGINT)
+        SCORUM_SET_SIGNAL_HANDLER(SIGTERM)
+        SCORUM_SET_SIGNAL_HANDLER(SIGUSR1)
 
         // TODO: add handlers to all possible aborting signals to close node correctly
-        fc::set_signal_handler(
-            [&handle_promise, &return_signal](int signal) {
-                return_signal = signal;
-                handle_promise->set_value(signal);
-            },
-            SIGUSR2);
+        SCORUM_SET_SIGNAL_HANDLER(SIGUSR2)
 
         std::cout << std::flush;
         std::cerr << std::flush;
