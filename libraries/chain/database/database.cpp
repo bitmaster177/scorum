@@ -234,11 +234,7 @@ void database::reindex(const fc::path& data_dir,
         SCORUM_ASSERT(_block_log.head(), block_log_exception, "No blocks in block log. Cannot reindex an empty chain.");
 
         auto last_block_num = _block_log.head()->block_num();
-#if 0
         uint log_interval_sz = std::max(last_block_num / 100u, 1000u);
-#else
-        uint log_interval_sz = 100u;
-#endif
         using scorum::protocol::digest_type;
         digest_type start_apply_block_digest;
         if (snapshot_file != fc::path())
@@ -292,7 +288,7 @@ void database::reindex(const fc::path& data_dir,
         auto end = fc::time_point::now();
         ilog("Done reindexing, elapsed time: ${t} sec", ("t", double((end - start).count()) / 1000000.0));
     }
-    FC_CAPTURE_AND_RETHROW((data_dir)(shared_mem_dir)(shared_file_size)(skip_flags)(genesis_state))
+    FC_CAPTURE_AND_RETHROW((data_dir)(shared_mem_dir)(shared_file_size)(skip_flags))
 }
 
 void database::wipe(const fc::path& data_dir, const fc::path& shared_mem_dir, bool include_blocks)

@@ -68,11 +68,12 @@ protected:
         auto constructor = [&](value_type& v) {
             v.id = new_id;
             c(v);
+            new_id = v.id;
         };
 
         const auto& val = emplace_(constructor, get_allocator());
 
-        ++_next_id;
+        _next_id = new_id._id + 1;
 
         return val;
     }

@@ -71,8 +71,19 @@ public:
 #ifdef DEBUG_SNAPSHOTTED_OBJECT
         if (debug_id == object_type::type_id)
         {
-            snapshot_log(ctx, "index size=${sz}", ("sz", index.size()));
             snapshot_log(ctx, "debugging ${name}:${id}", ("name", object_name)("id", (int)object_type::type_id));
+            snapshot_log(ctx, "loading size=${f}", ("f", sz));
+            snapshot_log(ctx, "index size=${sz}", ("sz", index.size()));
+
+            for (auto itr = index.begin(); itr != index.end(); ++itr)
+            {
+                const object_type& obj = (*itr);
+
+                fc::variant vo;
+                fc::to_variant(obj, vo);
+                snapshot_log(ctx, "exists ${name}: ${obj}",
+                             ("name", object_name)("obj", fc::json::to_pretty_string(vo)));
+            }
         }
 #endif // DEBUG_SNAPSHOTTED_OBJECT
 

@@ -18,7 +18,7 @@ using index_ids_type = fc::flat_set<uint16_t>;
 }
 }
 
-#define DEBUG_SNAPSHOTTED_OBJECT account_registration_bonus_object
+#define DEBUG_SNAPSHOTTED_OBJECT key_lookup_object
 
 #define snapshot_log(CTX, FORMAT, ...) fc_ctx_dlog(fc::logger::get("snapshot"), CTX, FORMAT, __VA_ARGS__)
 

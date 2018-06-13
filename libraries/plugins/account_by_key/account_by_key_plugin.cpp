@@ -33,9 +33,12 @@ public:
 
     void check_dbindex_startup()
     {
-        if (!_startup)
+        const auto& index = database()
+                                .get_index<typename chainbase::get_index_type<key_lookup_object>::type>()
+                                .indices()
+                                .get<by_id>();
+        if (index.empty())
         {
-            _startup = true;
             update_genesis_accounts();
         }
     }

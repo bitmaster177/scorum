@@ -51,18 +51,19 @@ public:
 #ifdef DEBUG_SNAPSHOTTED_OBJECT
         if (debug_id == object_type::type_id)
         {
-            snapshot_log(ctx, "index size=${sz}", ("sz", sz));
             snapshot_log(ctx, "debugging ${name}:${id}", ("name", object_name)("id", (int)object_type::type_id));
+            snapshot_log(ctx, "index size=${sz}", ("sz", sz));
         }
 #endif // DEBUG_SNAPSHOTTED_OBJECT
 
         fc::raw::pack(_fstream, sz);
-        auto itr = index.begin();
         if (sz > 0)
         {
+            auto itr = index.begin();
+
             fc::raw::pack(_fstream, get_data_struct_hash(*itr));
 
-            for (auto itr = index.begin(); itr != index.end(); ++itr)
+            for (; itr != index.end(); ++itr)
             {
                 const object_type& obj = (*itr);
 #ifdef DEBUG_SNAPSHOTTED_OBJECT
