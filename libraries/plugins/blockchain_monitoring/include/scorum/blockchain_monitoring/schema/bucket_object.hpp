@@ -34,7 +34,6 @@ struct bucket_object : public common_statistics::base_bucket_object,
 
 typedef oid<bucket_object> bucket_id_type;
 
-struct by_id;
 typedef shared_multi_index_container<bucket_object,
                                      indexed_by<ordered_unique<tag<by_id>,
                                                                member<bucket_object,

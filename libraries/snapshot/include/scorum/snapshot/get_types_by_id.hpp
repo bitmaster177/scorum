@@ -5,7 +5,7 @@
 #include <boost/preprocessor.hpp>
 
 #include <fc/static_variant.hpp>
-#include <fc/fixed_string.hpp>
+#include <string>
 #include <scorum/snapshot/serializer_extensions.hpp>
 
 #include <chainbase/chain_object.hpp>
@@ -39,7 +39,7 @@ using index_ids_type = fc::flat_set<uint16_t>;
     {                                                                                                                  \
         using object_type_variant_type                                                                                 \
             = fc::static_variant<BOOST_PP_SEQ_FOR_EACH_I(SCORUM_OBJECT_TYPE_EXTRACTION_MAKE_TYPE_LIST, _, FIELDS)>;    \
-        fc::fixed_string_32 name = BOOST_PP_STRINGIZE(BOOST_PP_CAT(SECTION_NAME, BOOST_PP_SEQ_HEAD(FIELDS)));          \
+        std::string name = BOOST_PP_STRINGIZE(SECTION_NAME);                                                           \
         object_type_variant_type get_object_type_variant(int id, bool& initialized) const                              \
         {                                                                                                              \
             initialized = true;                                                                                        \

@@ -7,7 +7,7 @@
 using namespace scorum::account_statistics;
 
 // clang-format off
-SCORUM_OBJECT_TYPES_FOR_SNAPSHOT_SECTION(account_statistic_section, account_statistics_plugin_object_types,
+SCORUM_OBJECT_TYPES_FOR_SNAPSHOT_SECTION(account_statistic_section, account_statistics_object_types,
                               (bucket)
                               )
 // clang-format on

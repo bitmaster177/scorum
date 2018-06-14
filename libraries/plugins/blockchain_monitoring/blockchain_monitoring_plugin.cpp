@@ -382,7 +382,7 @@ void blockchain_monitoring_plugin::plugin_initialize(const boost::program_option
 
         _my->initialize();
 
-        //        SCORUM_SNAPSHOT_PLUGIN(database(), blockchain_monitoring_section)
+        SCORUM_SNAPSHOT_PLUGIN(database(), blockchain_monitoring_section)
     }
     FC_CAPTURE_AND_RETHROW()
 
