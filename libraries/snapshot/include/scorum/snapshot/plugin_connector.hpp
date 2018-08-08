@@ -1,5 +1,6 @@
 #pragma once
 
+#if 0
 #include <scorum/snapshot/saver.hpp>
 #include <scorum/snapshot/loader.hpp>
 
@@ -14,3 +15,4 @@
             scorum::snapshot::load_index_section(fs, static_cast<db_state&>(DB), loaded_idxs, SECTION());              \
         });                                                                                                            \
     }
+#endif

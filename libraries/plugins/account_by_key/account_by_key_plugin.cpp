@@ -291,7 +291,7 @@ void account_by_key_plugin::plugin_initialize(const boost::program_options::vari
 
         db.add_plugin_index<key_lookup_index>();
 
-        SCORUM_SNAPSHOT_PLUGIN(db, account_by_key_section);
+        //        SCORUM_SNAPSHOT_PLUGIN(db, account_by_key_section);
     }
     FC_CAPTURE_AND_RETHROW()
     print_greeting();

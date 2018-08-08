@@ -35,6 +35,7 @@ set(SOURCES
     tasks_base_tests.cpp
     app_tests.cpp
     pack_unpack_reflected_obj_tests.cpp
+    any_cast_tests.cpp
 )
 
 add_executable(utests

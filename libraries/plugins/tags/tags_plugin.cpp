@@ -622,7 +622,7 @@ void tags_plugin::plugin_initialize(const boost::program_options::variables_map&
         db.add_plugin_index<author_tag_stats_index>();
         db.add_plugin_index<category_stats_index>();
 
-        SCORUM_SNAPSHOT_PLUGIN(db, tags_section)
+        //        SCORUM_SNAPSHOT_PLUGIN(db, tags_section)
     }
     FC_LOG_AND_RETHROW()
 

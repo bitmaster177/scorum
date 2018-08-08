@@ -362,7 +362,7 @@ void blockchain_history_plugin::plugin_initialize(const boost::program_options::
 
         _my->initialize();
 
-        SCORUM_SNAPSHOT_PLUGIN(database(), blockchain_history_section)
+        //        SCORUM_SNAPSHOT_PLUGIN(database(), blockchain_history_section)
     }
     FC_LOG_AND_RETHROW()
 

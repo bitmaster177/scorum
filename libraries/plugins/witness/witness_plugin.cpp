@@ -453,7 +453,7 @@ void witness_plugin::plugin_initialize(const boost::program_options::variables_m
         db.add_plugin_index<account_bandwidth_index>();
         db.add_plugin_index<reserve_ratio_index>();
 
-        SCORUM_SNAPSHOT_PLUGIN(db, witness_section)
+        //        SCORUM_SNAPSHOT_PLUGIN(db, witness_section)
     }
     FC_LOG_AND_RETHROW()
 
