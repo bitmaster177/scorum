@@ -15,6 +15,7 @@
 
 #include <scorum/protocol/scorum_operations.hpp>
 #include <scorum/protocol/proposal_operations.hpp>
+#include <scorum/protocol/operation_info.hpp>
 
 #include <scorum/chain/util/asset.hpp>
 
@@ -189,18 +190,21 @@ void database::open(const fc::path& data_dir,
             FC_ASSERT(genesis_state.initial_chain_id == chain_id,
                       "Current chain id is not equal initial chain id = ${id}", ("id", chain_id));
         }
-        catch (fc::exception& er)
+        catch (fc::exception& err)
         {
-            throw std::logic_error(std::string("Invalid chain id: ") + er.to_detail_string());
+            throw std::logic_error(std::string("Invalid chain id: ") + err.to_detail_string());
         }
 
-        with_read_lock([&]() {
-            init_hardforks(genesis_state.initial_timestamp); // Writes to local state, but reads from db
-        });
-    }
-    catch (fc::assert_exception&)
-    {
-        reindex(data_dir, shared_mem_dir, shared_file_size, get_reindex_skip_flags(), genesis_state);
+        try
+        {
+            with_read_lock([&]() {
+                init_hardforks(genesis_state.initial_timestamp); // Writes to local state, but reads from db
+            });
+        }
+        catch (fc::exception& err)
+        {
+            throw std::logic_error(std::string("Can't initialize hardforks: ") + err.to_detail_string());
+        }
     }
     FC_CAPTURE_LOG_AND_RETHROW((data_dir)(shared_mem_dir)(shared_file_size))
 }
@@ -994,19 +998,19 @@ void database::clear_pending()
     FC_CAPTURE_AND_RETHROW()
 }
 
-void database::notify_pre_apply_operation(operation_notification& note)
+void database::notify_pre_apply_operation(const operation_notification& note)
 {
-    note.trx_id = _current_trx_id;
-    note.block = _current_block_num;
-    note.trx_in_block = _current_trx_in_block;
-    note.op_in_trx = _current_op_in_trx;
-
-    SCORUM_TRY_NOTIFY(pre_apply_operation, note)
+    SCORUM_TRY_NOTIFY(pre_apply_operation, note);
 }
 
 void database::notify_post_apply_operation(const operation_notification& note)
 {
-    SCORUM_TRY_NOTIFY(post_apply_operation, note)
+    SCORUM_TRY_NOTIFY(post_apply_operation, note);
+}
+
+operation_notification database::create_notification(const operation& op) const
+{
+    return operation_notification(_current_trx_id, _current_block_num, _current_trx_in_block, _current_op_in_trx, op);
 }
 
 inline void database::push_virtual_operation(const operation& op)
@@ -1014,9 +1018,16 @@ inline void database::push_virtual_operation(const operation& op)
     if (_options & opt_notify_virtual_op_applying)
     {
         FC_ASSERT(is_virtual_operation(op));
-        operation_notification note(op);
+
+        auto note = create_notification(op);
+
+        operation_info ctx(op);
+        debug_log(ctx, "virt operation pre_apply BEGIN");
         notify_pre_apply_operation(note);
+        debug_log(ctx, "virt operation pre_apply END");
+        debug_log(ctx, "virt operation post_apply BEGIN");
         notify_post_apply_operation(note);
+        debug_log(ctx, "virt operation post_apply END");
     }
 }
 
@@ -1033,7 +1044,8 @@ void database::notify_load_snapshot(std::ifstream& fs, scorum::snapshot::index_i
 inline void database::push_hf_operation(const operation& op)
 {
     FC_ASSERT(is_virtual_operation(op));
-    operation_notification note(op);
+
+    auto note = create_notification(op);
     notify_pre_apply_operation(note);
     notify_post_apply_operation(note);
 }
@@ -1152,6 +1164,8 @@ void database::expire_escrow_ratification()
     const auto& escrow_idx = get_index<escrow_index>().indices().get<by_ratification_deadline>();
     auto escrow_itr = escrow_idx.lower_bound(false);
 
+    dbs_account& account_service = obtain_service<dbs_account>();
+
     while (escrow_itr != escrow_idx.end() && !escrow_itr->is_approved()
            && escrow_itr->ratification_deadline <= head_block_time())
     {
@@ -1159,8 +1173,7 @@ void database::expire_escrow_ratification()
         ++escrow_itr;
 
         const auto& from_account = obtain_service<dbs_account>().get_account(old_escrow.from);
-        adjust_balance(from_account, old_escrow.scorum_balance);
-        adjust_balance(from_account, old_escrow.pending_fee);
+        account_service.increase_balance(from_account, old_escrow.scorum_balance + old_escrow.pending_fee);
 
         remove(old_escrow);
     }
@@ -1504,6 +1517,7 @@ void database::_apply_block(const signed_block& next_block)
                   "Block produced by witness that is not running current hardfork",
                   ("witness", witness)("next_block.witness", next_block.witness)("hardfork_state", hardfork_state));
 
+        debug_log(ctx, "apply_transactions");
         for (const auto& trx : next_block.transactions)
         {
             /* We do not need to push the undo state for each transaction
@@ -1520,13 +1534,19 @@ void database::_apply_block(const signed_block& next_block)
             ++_current_trx_in_block;
         }
 
+        debug_log(ctx, "update_global_dynamic_data");
         update_global_dynamic_data(next_block);
+        debug_log(ctx, "update_signing_witness");
         update_signing_witness(signing_witness, next_block);
 
+        debug_log(ctx, "update_last_irreversible_block");
         update_last_irreversible_block();
 
+        debug_log(ctx, "create_block_summary");
         create_block_summary(next_block);
+        debug_log(ctx, "clear_expired_transactions");
         clear_expired_transactions();
+        debug_log(ctx, "clear_expired_delegations");
         clear_expired_delegations();
 
         // in dbs_database_witness_schedule.cpp
@@ -1534,7 +1554,7 @@ void database::_apply_block(const signed_block& next_block)
 
         database_ns::block_task_context task_ctx(static_cast<data_service_factory&>(*this),
                                                  static_cast<database_virtual_operations_emmiter_i&>(*this),
-                                                 _current_block_num);
+                                                 _current_block_num, ctx);
 
         database_ns::process_funds().apply(task_ctx);
         database_ns::process_fifa_world_cup_2018_bounty_initialize().apply(task_ctx);
@@ -1545,12 +1565,17 @@ void database::_apply_block(const signed_block& next_block)
         database_ns::process_account_registration_bonus_expiration().apply(task_ctx);
         database_ns::process_witness_reward_in_sp_migration().apply(task_ctx);
 
+        debug_log(ctx, "account_recovery_processing");
         account_recovery_processing();
+        debug_log(ctx, "expire_escrow_ratification");
         expire_escrow_ratification();
+        debug_log(ctx, "process_decline_voting_rights");
         process_decline_voting_rights();
 
+        debug_log(ctx, "clear_expired_proposals");
         obtain_service<dbs_proposal>().clear_expired_proposals();
 
+        debug_log(ctx, "process_hardforks");
         process_hardforks();
 
         // notify observers that the block has been applied
@@ -1715,7 +1740,8 @@ void database::_apply_transaction(const signed_transaction& trx)
 
 void database::apply_operation(const operation& op)
 {
-    operation_notification note(op);
+    auto note = create_notification(op);
+
     notify_pre_apply_operation(note);
     _my->_evaluator_registry.get_evaluator(op).apply(op);
     notify_post_apply_operation(note);
@@ -1975,20 +2001,6 @@ const genesis_persistent_state_type& database::genesis_persistent_state() const
     return _my->_genesis_persistent_state;
 }
 
-void database::adjust_balance(const account_object& a, const asset& delta)
-{
-    modify(a, [&](account_object& acnt) {
-        switch (delta.symbol())
-        {
-        case SCORUM_SYMBOL:
-            acnt.balance += delta;
-            break;
-        default:
-            FC_ASSERT(false, "invalid symbol");
-        }
-    });
-}
-
 void database::init_hardforks(time_point_sec genesis_time)
 {
     _hardfork_times[0] = genesis_time;
@@ -1996,9 +2008,9 @@ void database::init_hardforks(time_point_sec genesis_time)
 
     // SCORUM: structure to initialize hardofrks
 
-    // FC_ASSERT( SCORUM_HARDFORK_0_1 == 1, "Invalid hardfork configuration" );
-    //_hardfork_times[ SCORUM_HARDFORK_0_1 ] = fc::time_point_sec( SCORUM_HARDFORK_0_1_TIME );
-    //_hardfork_versions[ SCORUM_HARDFORK_0_1 ] = SCORUM_HARDFORK_0_1_VERSION;
+    FC_ASSERT(SCORUM_HARDFORK_0_1 == 1, "Invalid hardfork configuration");
+    _hardfork_times[SCORUM_HARDFORK_0_1] = fc::time_point_sec(SCORUM_HARDFORK_0_1_TIME);
+    _hardfork_versions[SCORUM_HARDFORK_0_1] = SCORUM_HARDFORK_0_1_VERSION;
 
     const auto& hardforks = obtain_service<dbs_hardfork_property>().get();
     FC_ASSERT(hardforks.last_hardfork <= SCORUM_NUM_HARDFORKS, "Chain knows of more hardforks than configuration",

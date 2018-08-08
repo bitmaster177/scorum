@@ -102,7 +102,7 @@ void account_statistics_plugin::plugin_initialize(const boost::program_options::
     {
         _my->initialize();
 
-        SCORUM_SNAPSHOT_PLUGIN(database(), account_statistic_section)
+        //        SCORUM_SNAPSHOT_PLUGIN(database(), account_statistic_section)
     }
     FC_LOG_AND_RETHROW()
 

@@ -13,6 +13,7 @@ SCORUM_OBJECT_TYPES_FOR_SNAPSHOT_SECTION(blockchain_history_section, blockchain_
                                          (account_all_operations_history)
                                          (account_scr_to_scr_transfers_history)
                                          (account_scr_to_sp_transfers_history)
+                                         (account_sp_to_scr_withdrawals_history)
                                          (filtered_not_virt_operations_history)
                                          (filtered_virt_operations_history)
                                          (filtered_market_operations_history)

@@ -28,6 +28,7 @@ enum blockchain_history_object_type
     account_all_operations_history_object_type,
     account_scr_to_scr_transfers_history_object_type,
     account_scr_to_sp_transfers_history_object_type,
+    account_sp_to_scr_withdrawals_history_object_type,
     filtered_not_virt_operations_history_object_type,
     filtered_virt_operations_history_object_type,
     filtered_market_operations_history_object_type,

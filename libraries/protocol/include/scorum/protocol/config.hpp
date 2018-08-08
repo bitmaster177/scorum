@@ -18,11 +18,16 @@ namespace detail {
 
         const uint32_t blockid_pool_size;
 
+        const uint32_t vesting_withdraw_intervals;
+        const uint32_t vesting_withdraw_interval_seconds;
+
         const uint32_t cashout_window_seconds;
 
-        const fc::microseconds vote_regeneration_seconds;
+        const fc::microseconds reverse_auction_window_seconds;
 
         const fc::microseconds upvote_lockout;
+
+        const fc::microseconds vote_regeneration_seconds;
 
         const fc::microseconds owner_auth_recovery_period;
         const fc::microseconds account_recovery_request_expiration_period;
@@ -41,9 +46,6 @@ namespace detail {
 
         const uint32_t atomicswap_limit_requested_contracts_per_owner;
         const uint32_t atomicswap_limit_requested_contracts_per_recipient;
-
-        const uint32_t vesting_withdraw_intervals;
-        const uint32_t vesting_withdraw_interval_seconds;
 
         const uint32_t min_vote_interval_sec;
 
@@ -74,7 +76,8 @@ namespace detail {
 
 #define DAYS_TO_SECONDS(X)                     (60u*60u*24u*X)
 
-#define SCORUM_BLOCKCHAIN_VERSION              ( version(0, 0, 3) )
+#define SCORUM_BLOCKCHAIN_VERSION              ( version(0, 1, 1) )
+
 #define SCORUM_BLOCKCHAIN_HARDFORK_VERSION     ( hardfork_version( SCORUM_BLOCKCHAIN_VERSION ) )
 
 #define SCORUM_ADDRESS_PREFIX                  "SCR"
@@ -167,7 +170,7 @@ namespace detail {
 #define SCORUM_SAVINGS_WITHDRAW_REQUEST_LIMIT  100
 #define SCORUM_VOTE_REGENERATION_SECONDS       (scorum::protocol::detail::get_config().vote_regeneration_seconds)
 #define SCORUM_MAX_VOTE_CHANGES                3
-#define SCORUM_REVERSE_AUCTION_WINDOW_SECONDS  (fc::seconds(60*30)) // 30 minutes
+#define SCORUM_REVERSE_AUCTION_WINDOW_SECONDS  (scorum::protocol::detail::get_config().reverse_auction_window_seconds)
 
 #define SCORUM_MIN_ROOT_COMMENT_INTERVAL       (fc::minutes(5))
 #define SCORUM_MIN_REPLY_INTERVAL              (fc::seconds(20))

@@ -118,10 +118,11 @@ BOOST_AUTO_TEST_CASE(vector_binary_save_and_load)
     v_obj_in.push_back({ "ObjectObject ", 2, "T2" });
     v_obj_in.push_back({ "ObjectObjectObject ", 3, "T3" });
 
-    static fc::path snapshot_file_path
-        = fc::temp_directory(graphene::utilities::temp_directory_path()).path() / "test.bin";
+    static fc::path snapshot_dir_path = fc::temp_directory(graphene::utilities::temp_directory_path()).path();
 
-    fc::remove_all(snapshot_file_path);
+    fc::create_directories(snapshot_dir_path);
+
+    fc::path snapshot_file_path = snapshot_dir_path / "test.bin";
 
     {
         std::ofstream snapshot_stream;
@@ -182,6 +183,8 @@ BOOST_AUTO_TEST_CASE(vector_binary_save_and_load)
         BOOST_CHECK_EQUAL(v_obj_in[ci].val1, v_obj_out[ci].val1);
         BOOST_CHECK_EQUAL(v_obj_in[ci].val2, v_obj_out[ci].val2);
     }
+
+    fc::remove_all(snapshot_dir_path);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

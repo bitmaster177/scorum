@@ -11,9 +11,13 @@
 #include <graphene/utilities/tempdir.hpp>
 #include <fc/filesystem.hpp>
 
+#include <scorum/protocol/block.hpp>
+
 namespace snapshot_tests {
 
+using namespace scorum;
 using namespace scorum::chain;
+using namespace scorum::protocol;
 
 struct snapshot_fixture : public database_fixture::database_trx_integration_fixture
 {
@@ -83,8 +87,9 @@ BOOST_AUTO_TEST_CASE(save_and_load_snapshot_for_genesis_state)
 
     save_scheduled_snapshot saver(db);
 
+    block_info empty_info;
     block_task_context ctx(static_cast<data_service_factory&>(db),
-                           static_cast<database_virtual_operations_emmiter_i&>(db), db.head_block_num());
+                           static_cast<database_virtual_operations_emmiter_i&>(db), db.head_block_num(), empty_info);
 
     BOOST_REQUIRE_NO_THROW(saver.apply(ctx));
 
@@ -182,9 +187,10 @@ BOOST_AUTO_TEST_CASE(save_and_load_snapshot_with_removing_items)
 
     save_scheduled_snapshot saver(fixture->db);
 
+    block_info empty_info;
     block_task_context ctx(static_cast<data_service_factory&>(fixture->db),
                            static_cast<database_virtual_operations_emmiter_i&>(fixture->db),
-                           fixture->db.head_block_num());
+                           fixture->db.head_block_num(), empty_info);
 
     BOOST_REQUIRE_NO_THROW(saver.apply(ctx));
 
