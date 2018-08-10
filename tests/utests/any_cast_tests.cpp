@@ -34,29 +34,25 @@ struct c_type : public object<10>
 template <uint16_t Id> struct get_object_type
 {
     typedef empty_type type;
-
-    static constexpr uint16_t initialized = false;
 };
 
 template <> struct get_object_type<a_type::type_id>
 {
     typedef a_type type;
-
-    static constexpr uint16_t initialized = true;
 };
 
 template <> struct get_object_type<b_type::type_id>
 {
     typedef b_type type;
-
-    static constexpr uint16_t initialized = true;
 };
 
 template <> struct get_object_type<c_type::type_id>
 {
     typedef c_type type;
+};
 
-    static constexpr uint16_t initialized = true;
+template <typename T, typename U> struct decay_equiv : std::is_same<typename std::decay<T>::type, U>::type
+{
 };
 
 static struct find_object_type
@@ -90,11 +86,13 @@ static struct find_object_type
         {
             if (id == N)
             {
-                auto tp = boost::fusion::at_c<N>(t);
-                if (!tp.initialized)
+                auto& tp = boost::fusion::at_c<N>(t);
+                using object_type = typename std::decay<decltype(tp)>::type;
+                if ((decay_equiv<typename object_type::type, empty_type>::value))
                     return false;
 
-                return v(tp);
+                typename object_type::type* objp = nullptr;
+                return v(objp);
             }
             return find_object_type_impl<Visitor, Container, N + 1, End>()(v, t, id);
         }
@@ -112,28 +110,33 @@ static struct find_object_type
     {
         if (id < 9)
         {
-            return find_object_type_impl<Visitor, decltype(space_0_9), 0,
-                                         boost::fusion::result_of::size<decltype(space_0_9)>::type::value>()(
-                v, space_0_9, id);
+            auto& space = space_0_9;
+            return find_object_type_impl<Visitor, std::decay<decltype(space)>::type, 0,
+                                         boost::fusion::result_of::size<std::decay<decltype(space)>::type>::type::
+                                             value>()(v, space, id);
         }
         else if (id < 19)
         {
-            return find_object_type_impl<Visitor, decltype(space_10_19), 0,
-                                         boost::fusion::result_of::size<decltype(space_10_19)>::type::value>()(
-                v, space_10_19, id - 10);
+            auto& space = space_10_19;
+            return find_object_type_impl<Visitor, std::decay<decltype(space)>::type, 0,
+                                         boost::fusion::result_of::size<std::decay<decltype(space)>::type>::type::
+                                             value>()(v, space, id - 10);
         }
         return false;
     }
 } object_types;
 
-template <typename T, typename U> struct decay_equiv : std::is_same<typename std::decay<T>::type, U>::type
-{
-};
-
 struct object_visitor
 {
-    template <class T> bool operator()(const T&) const
+    bool operator()(const empty_type*) const
     {
+        return false;
+    }
+
+    template <class T> bool operator()(const T*) const
+    {
+        auto object_name = boost::core::demangle(typeid(T).name());
+        std::cerr << object_name << T::type_id << std::endl;
         return true;
     }
 };

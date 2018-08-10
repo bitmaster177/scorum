@@ -17,18 +17,16 @@ namespace snapshot {
 
 using db_state = chainbase::db_state;
 
-template <class IterationTag, class Section> class load_index_visitor
+template <class IterationTag> class load_index_visitor
 {
 public:
-    using result_type = void;
-
     load_index_visitor(std::ifstream& fstream, db_state& state)
         : _fstream(fstream)
         , _state(state)
     {
     }
 
-    template <class T> void operator()(const T&) const
+    template <class T> bool operator()(const T&) const
     {
         using object_type = typename T::type;
 
@@ -179,42 +177,13 @@ public:
 #endif // DEBUG_SNAPSHOTTED_OBJECT
             });
         }
+
+        return true;
     }
 
 private:
     std::ifstream& _fstream;
     db_state& _state;
 };
-
-template <class Section>
-void load_index_section(std::ifstream& fstream,
-                        chainbase::db_state& state,
-                        scorum::snapshot::index_ids_type& loaded_idxs,
-                        const Section& section)
-{
-#ifdef DEBUG_SNAPSHOTTED_OBJECT
-    snapshot_log(DEBUG_SNAPSHOT_LOAD_CONTEXT, "loading index section=${name}", ("name", section.name));
-#endif // DEBUG_SNAPSHOTTED_OBJECT
-
-    fc::ripemd160 check;
-
-    fc::raw::unpack(fstream, check);
-
-    fc::ripemd160::encoder check_enc;
-    fc::raw::pack(check_enc, section.name);
-
-    FC_ASSERT(check_enc.result() == check);
-
-    state.for_each_index_key([&](uint16_t index_id) {
-        bool initialized = false;
-        auto v = section.get_object_type_variant(index_id, initialized);
-        // checking because static variant interpret uninitialized state like first type
-        if (initialized)
-        {
-            v.visit(load_index_visitor<by_id, Section>(fstream, state));
-            loaded_idxs.insert(index_id);
-        }
-    });
-}
 }
 }

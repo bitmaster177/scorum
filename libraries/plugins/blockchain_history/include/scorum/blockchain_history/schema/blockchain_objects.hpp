@@ -14,7 +14,7 @@
 //
 
 #ifndef BLOCKCHAIN_HISTORY_SPACE_ID
-#define BLOCKCHAIN_HISTORY_SPACE_ID 7
+#define BLOCKCHAIN_HISTORY_SPACE_ID 4
 #endif
 
 namespace scorum {
@@ -24,7 +24,7 @@ using namespace scorum::chain;
 
 enum blockchain_history_object_type
 {
-    operations_history_object_type = (BLOCKCHAIN_HISTORY_SPACE_ID << 8),
+    operations_history_object_type = (BLOCKCHAIN_HISTORY_SPACE_ID << OBJECT_TYPE_SPACE_ID_OFFSET),
     account_all_operations_history_object_type,
     account_scr_to_scr_transfers_history_object_type,
     account_scr_to_sp_transfers_history_object_type,

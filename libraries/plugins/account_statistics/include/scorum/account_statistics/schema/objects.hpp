@@ -19,7 +19,7 @@
 // time.
 //
 #ifndef ACCOUNT_STATISTICS_SPACE_ID
-#define ACCOUNT_STATISTICS_SPACE_ID 10
+#define ACCOUNT_STATISTICS_SPACE_ID 3
 #endif
 
 namespace scorum {
@@ -29,7 +29,7 @@ using namespace scorum::chain;
 
 enum account_statistics_object_types
 {
-    bucket_object_type = (ACCOUNT_STATISTICS_SPACE_ID << 8),
+    bucket_object_type = (ACCOUNT_STATISTICS_SPACE_ID << OBJECT_TYPE_SPACE_ID_OFFSET),
 };
 
 struct bucket_object : public common_statistics::base_bucket_object, public object<bucket_object_type, bucket_object>

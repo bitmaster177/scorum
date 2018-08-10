@@ -18,14 +18,16 @@
 #include <scorum/snapshot/loader.hpp>
 #include <scorum/snapshot/saver.hpp>
 
-#include <scorum/chain/database/snapshot_types.hpp>
+#include <scorum/chain/database/snapshot_finder_for_types.hpp>
 
 namespace scorum {
+
+static find_object_type object_types;
+
 namespace chain {
 namespace database_ns {
 
 using db_state = chainbase::db_state;
-using scorum::snapshot::base_section;
 
 class scheduled_snapshot_impl
 {
@@ -35,6 +37,18 @@ public:
         , blocks_story_service(db.blocks_story_service())
         , _state(state)
     {
+    }
+
+    void save_index_section(std::ofstream& fstream, chainbase::db_state& state)
+    {
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
+        snapshot_log(DEBUG_SNAPSHOT_SAVE_CONTEXT, "saving index");
+#endif // DEBUG_SNAPSHOTTED_OBJECT
+
+        state.for_each_index_key([&](uint16_t index_id) {
+            FC_ASSERT(object_types.apply(scorum::snapshot::save_index_visitor<by_id>(fstream, state), index_id),
+                      "Can't save index");
+        });
     }
 
     void save(const fc::path& snapshot_path, database_virtual_operations_emmiter_i& vops)
@@ -55,7 +69,7 @@ public:
         header.chainbase_flags = chainbase::database::read_write;
         fc::raw::pack(snapshot_stream, header);
 
-        scorum::snapshot::save_index_section(snapshot_stream, _state, base_section());
+        save_index_section(snapshot_stream, _state);
 
         vops.notify_save_snapshot(snapshot_stream);
         snapshot_stream.close();
@@ -82,6 +96,22 @@ public:
         return header;
     }
 
+    void load_index_section(std::ifstream& fstream,
+                            chainbase::db_state& state,
+                            scorum::snapshot::index_ids_type& loaded_idxs)
+    {
+#ifdef DEBUG_SNAPSHOTTED_OBJECT
+        snapshot_log(DEBUG_SNAPSHOT_LOAD_CONTEXT, "loading index");
+#endif // DEBUG_SNAPSHOTTED_OBJECT
+
+        state.for_each_index_key([&](uint16_t index_id) {
+            if (object_types.apply(scorum::snapshot::load_index_visitor<by_id>(fstream, state), index_id))
+            {
+                loaded_idxs.insert(index_id);
+            }
+        });
+    }
+
     void load(const fc::path& snapshot_path, database_virtual_operations_emmiter_i& vops)
     {
         std::ifstream snapshot_stream;
@@ -99,7 +129,7 @@ public:
 
         loaded_idxs.reserve(_state.get_indexes_size());
 
-        scorum::snapshot::load_index_section(snapshot_stream, _state, loaded_idxs, base_section());
+        load_index_section(snapshot_stream, _state, loaded_idxs);
 
         vops.notify_load_snapshot(snapshot_stream, loaded_idxs);
 

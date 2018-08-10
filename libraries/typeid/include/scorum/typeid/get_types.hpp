@@ -11,10 +11,21 @@ template <typename T> struct get_index_type
 {
 };
 
-template <uint16_t Id> struct get_object_type;
+struct empty_object_type
+{
+};
+
+template <uint16_t Id> struct get_object_type
+{
+    using type = empty_object_type;
+
+    static constexpr uint16_t initialized = false;
+};
 
 struct by_id;
 }
+
+#define OBJECT_TYPE_SPACE_ID_OFFSET 6
 
 /**
 *  This macro must be used at global scope and OBJECT_TYPE and INDEX_TYPE must be fully qualified
@@ -23,10 +34,12 @@ struct by_id;
     namespace scorum {                                                                                                 \
     template <> struct get_index_type<OBJECT_TYPE>                                                                     \
     {                                                                                                                  \
-        typedef INDEX_TYPE type;                                                                                       \
+        using type = INDEX_TYPE;                                                                                       \
     };                                                                                                                 \
     template <> struct get_object_type<OBJECT_TYPE::type_id>                                                           \
     {                                                                                                                  \
-        typedef OBJECT_TYPE type;                                                                                      \
+        using type = OBJECT_TYPE;                                                                                      \
+                                                                                                                       \
+        static constexpr uint16_t initialized = true;                                                                  \
     };                                                                                                                 \
     }
